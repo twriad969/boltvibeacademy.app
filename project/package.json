@@ -1,0 +1,25 @@
+{
+  "name": "your-project-name",
+  "version": "1.0.0",
+  "description": "A project showcasing promotional offers and features.",
+  "main": "index.js",
+  "scripts": {
+    "start": "next dev",
+    "build": "next build",
+    "start:prod": "next start"
+  },
+  "dependencies": {
+    "react": "^17.0.2",
+    "react-dom": "^17.0.2",
+    "next": "^11.1.0",
+    "lucide-react": "^0.1.0"
+  },
+  "devDependencies": {
+    "typescript": "^4.3.5",
+    "@types/react": "^17.0.2",
+    "@types/react-dom": "^17.0.2"
+  },
+  "keywords": [],
+  "author": "Your Name",
+  "license": "MIT"
+}
