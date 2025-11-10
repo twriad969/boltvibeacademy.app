@@ -6,6 +6,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import FacebookPixelProvider from '@/components/FacebookPixelProvider';
 import ClarityProvider from '@/components/ClarityProvider';
+import { Analytics } from "@vercel/analytics/next";
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -47,6 +48,7 @@ export default function RootLayout({
           <ClarityProvider />
           {children}
           <Toaster />
+          <Analytics />
         </ThemeProvider>
       </body>
     </html>

@@ -1,29 +1,3 @@
-/**
- * FACEBOOK PIXEL + CAPI DEDUPLICATION STRATEGY
- * 
- * This page implements a comprehensive deduplication strategy to prevent duplicate "Purchase" events:
- * 
- * 1. CLIENT-SIDE DEDUPLICATION:
- *    - Uses localStorage to persist deduplication flags across page reloads
- *    - Key: `fb_pixel_fired_${invoiceId}` ensures one event per unique invoice
- * 
- * 2. EVENT ID CONSISTENCY:
- *    - Same event_id (`purchase_${invoiceId}`) used for both Pixel and CAPI
- *    - Facebook automatically deduplicates events with identical event_id
- * 
- * 3. SERVER-SIDE DEDUPLICATION:
- *    - CAPI route has additional in-memory deduplication check
- *    - Prevents duplicate server-side events even if client bypasses checks
- * 
- * 4. SINGLE EXECUTION POINT:
- *    - All tracking logic consolidated into one function
- *    - Executes only once per invoice, only after confirmed purchase
- * 
- * CRITICAL: Both Pixel and CAPI use identical:
- * - event_id (for Facebook's deduplication)
- * - value, currency, content_type, content_ids (for accurate attribution)
- * - hashed user data (for proper event matching)
- */
 'use client';
 
 import { CheckCircle, MailCheck, AlertTriangle, MessageCircle } from 'lucide-react';
@@ -93,7 +67,9 @@ function PaymentSuccessContent() {
                 
                 // Send webhook notification for successful purchase
                 await sendWebhookNotification({
+                  name: validUserDetails.name,
                   email: validUserDetails.email,
+                  phone: validUserDetails.phone || '',
                   purchased: true
                 });
 

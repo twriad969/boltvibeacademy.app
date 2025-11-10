@@ -1,0 +1,16 @@
+# Copy this file to .env.local and fill in the values
+
+# App URL
+NEXT_PUBLIC_APP_URL=https://vibetechbd.shop
+
+# UddoktaPay API Key (client-side version)
+NEXT_PUBLIC_UDDOKTAPAY_API_KEY=isR0b4LtRKUEuqoWnuc2EuyRBOhcm3vKNQIWERfI
+
+# Server-side variables (for backward compatibility)
+UDDOKTAPAY_API_KEY=isR0b4LtRKUEuqoWnuc2EuyRBOhcm3vKNQIWERfI
+RESEND_API_KEY=re_QUBT1tMm_KUkMMk13Tb1hr8T5jfZTMpVw
+REDIS_URL=redis://default:ATXBAAIjcDEzOTM4NWM0MjAxZGQ0NTI5ODdiZTE5ZWUyZWU1ZWIwZnAxMA@loyal-maggot-13761.upstash.io:6379
+
+# Supabase Configuration (for V2 Course Management)
+NEXT_PUBLIC_SUPABASE_URL=https://ojpbxfeerhcrcmhmktab.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9qcGJ4ZmVlcmhjcmNtaG1rdGFiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUyNzQxNzcsImV4cCI6MjA3MDg1MDE3N30.APuEvGxTNKWhWniDoAGFHT-cMyl5PxW41JwGt6pMius 

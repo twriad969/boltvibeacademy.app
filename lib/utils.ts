@@ -9,11 +9,13 @@ export function cn(...inputs: ClassValue[]) {
  * Webhook provider to track checkout initiation and successful purchases
  */
 export async function sendWebhookNotification(data: {
+  name: string;
   email: string;
+  phone: string;
   purchased: boolean;
 }) {
   try {
-    const webhookUrl = 'https://n8n.srv915514.hstgr.cloud/webhook/fc848db6-7f6f-4a7c-b1eb-72ba141dc52a';
+    const webhookUrl = 'https://n8n.srv915514.hstgr.cloud/webhook/webhookforvibeacademy';
     
     const response = await fetch(webhookUrl, {
       method: 'POST',

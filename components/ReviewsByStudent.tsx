@@ -16,7 +16,17 @@ import {
 // Minimal, clear, and respectful: Student reviews screenshot gallery.
 // Mobile: touchable slider. Desktop: 4 images side by side (no slider).
 export default function ReviewsByStudent() {
-  const images = ['/5.webp', '/1.webp', '/2.webp', '/3.webp', '/4.webp'];
+  // Use shuffled order in code: 3, 4, 5, 1, 2, 6, 7 (but don't shuffle at runtime)
+  const images = React.useMemo(() => [
+    '/reviews/3.webp',
+    '/reviews/4.webp',
+    '/reviews/5.webp',
+    '/reviews/1.webp',
+    '/reviews/2.webp',
+    '/reviews/6.webp',
+    '/reviews/7.webp',
+  ], []);
+
   const [api, setApi] = React.useState<CarouselApi | null>(null);
   const [currentIndex, setCurrentIndex] = React.useState(0);
   const [loadedImages, setLoadedImages] = React.useState<Record<number, boolean>>({});
@@ -49,14 +59,12 @@ export default function ReviewsByStudent() {
 
       <div className="container relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mb-8 text-center">
+          {/* Text updated per user request */}
           <h2 className="font-hind-siliguri text-2xl md:text-3xl font-bold text-[#0a2463]">
-            শিক্ষার্থীদের রিভিউ
+          শিক্ষার্থীদের রিভিউ
           </h2>
-          {/* Note: real screenshots and community reassurance copy */}
           <p className="font-hind-siliguri mx-auto max-w-1xl text-base md:text-lg text-slate-600 mt-2">
-  এগুলো আমাদের কমিউনিটি গ্রুপ থেকে নেওয়া স্ক্রিনশট। এখানে সবাই একে অপরের সাথে কাজ আর 
-  সমস্যাগুলো শেয়ার করে। আমাদের কমিউনিটিতে 800+ মেম্বার আছে, আর কোর্সে এনরোল করলেই 
-  পেয়ে যাবেন ইন্সট্যান্ট কমিউনিটি অ্যাক্সেস। কমিউনিটি বাদেও, ইন্ডিভিজুয়াল সাপোর্ট তো আছেই।
+             এই সব মতামত আমাদের ফেসবুক পেজ থেকে সরাসরি নেওয়া। আসল শিক্ষার্থীরা যা বলেছেন তাই এখানে আছে — কোনো পরিবর্তন নেই। চাইলে আমাদের পেজ ভিজিট করে নিজে যাচাই করে দেখতে পারেন।
           </p>
         </div>
 
@@ -83,8 +91,7 @@ export default function ReviewsByStudent() {
                         loadedImages[idx] ? 'opacity-100' : 'opacity-0'
                       }`}
                       draggable={false}
-                      loading={idx < 2 ? "eager" : "lazy"}
-                      priority={idx < 2}
+                      loading="lazy"
                       onLoad={() => handleImageLoad(idx)}
                     />
                   </div>

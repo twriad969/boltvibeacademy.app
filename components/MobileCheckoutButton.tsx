@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { PRICING } from '@/lib/constants';
+import { COURSE_PRICE } from '@/lib/price';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export function MobileCheckoutButton() {
@@ -97,8 +98,8 @@ export function MobileCheckoutButton() {
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.2 }}
               >
-                <span className="text-2xl font-bold text-[1.1em]">1500৳</span>{" "}
-                <span className="text-lg line-through opacity-70 text-[1.1em]">4500৳</span>
+                <span className="text-2xl font-bold text-[1.1em]">{COURSE_PRICE.regular}৳</span>{" "}
+                <span className="text-lg line-through opacity-70 text-[1.1em]">{COURSE_PRICE.original}৳</span>
               </motion.div>
             </div>
             <motion.button 

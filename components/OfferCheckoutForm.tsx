@@ -11,7 +11,8 @@ import { ArrowRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import GridBackground from '@/components/ui/grid-background';
 import { trackEvent } from '@/lib/fbPixel';
-import { sendWebhookNotification, createClientSidePayment } from '@/lib/utils'; // Import directly
+import { sendWebhookNotification, createClientSidePayment } from '@/lib/utils';
+import { COURSE_PRICE, getOfferCheckoutEventData } from '@/lib/price';
 
 type FormData = {
   name: string;
@@ -30,20 +31,16 @@ export function OfferCheckoutForm() {
     try {
       // Send webhook notification for checkout initiation
       await sendWebhookNotification({
+        name: data.name,
         email: data.email,
+        phone: data.phone,
         purchased: false
       });
 
       // Track checkout initiation with specific value for offer
       await trackEvent(
         'InitiateCheckout',
-        {
-          value: 1000, // Hardcoded for offer
-          currency: 'BDT',
-          content_type: 'course',
-          content_ids: ['N8NOFFERCOURSE1'], // New content ID for offer
-          num_items: 1,
-        },
+        getOfferCheckoutEventData(),
         {
           name: data.name,
           email: data.email,
@@ -58,7 +55,7 @@ export function OfferCheckoutForm() {
         name: data.name,
         email: data.email,
         phone: data.phone,
-        amountOverride: 1000, // Pass the hardcoded amount
+        amountOverride: COURSE_PRICE.offer,
       });
 
       if (paymentResult.success && paymentResult.payment_url) {
@@ -118,9 +115,9 @@ export function OfferCheckoutForm() {
                 <p className="font-hind-siliguri mb-1 text-sm font-medium text-[#5D28E0]">Special Offer Price</p>
                 <div className="flex flex-wrap items-center">
                   <div className="flex items-baseline">
-                    <span className="text-xl sm:text-3xl font-bold text-destructive line-through mr-3">৳1500</span>
+                    <span className="text-xl sm:text-3xl font-bold text-destructive line-through mr-3">{COURSE_PRICE.display.regular}</span>
                     <span className="text-2xl sm:text-3xl font-bold text-[#0a2463]">
-                      ৳1000
+                      {COURSE_PRICE.display.offer}
                     </span>
                   </div>
                   <div className="ml-auto">

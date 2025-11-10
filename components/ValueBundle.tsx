@@ -7,7 +7,7 @@ import { CheckCircle, Crown, Gift } from 'lucide-react';
 export function ValueBundle() {
   const bonusItems = [
     { 
-      name: 'N8N 1year pro plan', 
+      name: 'N8N 3year pro plan', 
       value: '২৫,০০০ টাকা', 
       originalPrice: '$240',
       icon: <Crown className="h-5 w-5 text-[#5D28E0]" />,

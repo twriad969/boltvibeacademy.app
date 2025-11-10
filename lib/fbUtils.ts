@@ -18,6 +18,7 @@
  * - Never modify hashing logic without updating both implementations
  */
 import CryptoJS from 'crypto-js';
+import { COURSE_PRICE } from './price';
 
 // Function to hash data using SHA-256
 export const hashData = (data: string): string => {
@@ -88,11 +89,12 @@ export const generateEventId = (invoiceId: string): string => {
 
 /**
  * Purchase event configuration
+ * Now uses centralized price from price.ts
  */
 export const PURCHASE_CONFIG = {
-  value: 1500,
-  currency: 'BDT',
-  content_type: 'course',
-  content_ids: ['N8NCOURSE1'],
-  num_items: 1,
+  value: COURSE_PRICE.regular,
+  currency: COURSE_PRICE.currency,
+  content_type: COURSE_PRICE.tracking.content_type,
+  content_ids: [COURSE_PRICE.contentIds.regular],
+  num_items: COURSE_PRICE.tracking.num_items,
 } as const;

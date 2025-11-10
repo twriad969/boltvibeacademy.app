@@ -10,12 +10,14 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { PRICING, LESSONS } from '@/lib/constants';
 import { cn, sendWebhookNotification } from '@/lib/utils';
+import { COURSE_PRICE, getRegularCheckoutEventData } from '@/lib/price';
 import { Check, Sparkles, ArrowRight, Users, Lock, X, Gift } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import GridBackground from '@/components/ui/grid-background';
 import { trackEvent } from '@/lib/fbPixel';
 import { getCookie } from 'cookies-next';
 import confetti from 'canvas-confetti';
+import Image from 'next/image';
 
 type FormData = {
   name: string;
@@ -23,12 +25,36 @@ type FormData = {
   phone: string;
 };
 
+
+const USE_FIXED_NOVEMBER_1_DEADLINE = true;
+
+function getOfferDeadline(): Date {
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  // Months are 0-based: 10 => November
+  const thisYearNov1 = new Date(currentYear, 10, 1, 0, 0, 0, 0);
+  
+  if (now.getTime() < thisYearNov1.getTime()) {
+    // Before Nov 1: countdown to Nov 1
+    return thisYearNov1;
+  } else {
+    // On/after Nov 1: countdown to Nov 11 (10 days extension)
+    const nov11 = new Date(currentYear, 10, 11, 0, 0, 0, 0);
+    if (now.getTime() < nov11.getTime()) {
+      return nov11;
+    }
+    // If past Nov 11, return next year's Nov 1
+    return new Date(currentYear + 1, 10, 1, 0, 0, 0, 0);
+  }
+}
+
 export function CheckoutForm() {
   const { register, handleSubmit, formState: { errors }, setValue } = useForm<FormData>();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [purchaseCount, setPurchaseCount] = useState<number>(0);
   const [countdown, setCountdown] = useState<{ days: number; hours: number; minutes: number; seconds: number }>({ days: 7, hours: 0, minutes: 0, seconds: 0 });
   const [showExtensionPopup, setShowExtensionPopup] = useState(false);
+  const [showNovemberExtensionPopup, setShowNovemberExtensionPopup] = useState(false);
   const confettiRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -66,6 +92,42 @@ export function CheckoutForm() {
   };
 
   useEffect(() => {
+    if (USE_FIXED_NOVEMBER_1_DEADLINE) {
+      // Fixed deadline countdown to November 1, then extends to November 6. No localStorage usage.
+      const target = getOfferDeadline();
+
+      const update = () => {
+        const now = new Date();
+        let totalSeconds = Math.max(0, Math.floor((target.getTime() - now.getTime()) / 1000));
+
+        const days = Math.floor(totalSeconds / (24 * 60 * 60));
+        totalSeconds -= days * 24 * 60 * 60;
+        const hours = Math.floor(totalSeconds / (60 * 60));
+        totalSeconds -= hours * 60 * 60;
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds - minutes * 60;
+
+        setCountdown({ days, hours, minutes, seconds });
+
+        // Update the displayed values if elements exist
+        const d = document.getElementById('days');
+        const h = document.getElementById('hours');
+        const m = document.getElementById('minutes');
+        const s = document.getElementById('seconds');
+        if (d) d.textContent = days.toString().padStart(2, '0');
+        if (h) h.textContent = hours.toString().padStart(2, '0');
+        if (m) m.textContent = minutes.toString().padStart(2, '0');
+        if (s) s.textContent = seconds.toString().padStart(2, '0');
+      };
+
+      update();
+      const timer = setInterval(update, 1000);
+      return () => clearInterval(timer);
+    }
+
+    // Legacy: localStorage-based 7-day countdown with extension popup.
+    // Kept for future use; currently disabled by USE_FIXED_NOVEMBER_1_DEADLINE.
+    // To re-enable, set USE_FIXED_NOVEMBER_1_DEADLINE = false.
     // Load countdown from localStorage or set initial value
     const savedCountdown = localStorage.getItem('offerCountdown');
     const initialTime = savedCountdown ? JSON.parse(savedCountdown) : {
@@ -105,12 +167,12 @@ export function CheckoutForm() {
         totalSeconds = 0;
       }
 
-         const days = Math.floor(totalSeconds / (24 * 60 * 60));
-         const hours = Math.floor((totalSeconds % (24 * 60 * 60)) / (60 * 60));
-         const minutes = Math.floor((totalSeconds % (60 * 60)) / 60);
-         const seconds = totalSeconds % 60;
+      const days = Math.floor(totalSeconds / (24 * 60 * 60));
+      const hours = Math.floor((totalSeconds % (24 * 60 * 60)) / (60 * 60));
+      const minutes = Math.floor((totalSeconds % (60 * 60)) / 60);
+      const seconds = totalSeconds % 60;
 
-         setCountdown({ days, hours, minutes, seconds });
+      setCountdown({ days, hours, minutes, seconds });
     }
 
     const timer = setInterval(() => {
@@ -134,19 +196,23 @@ export function CheckoutForm() {
         }
 
         const currentState = JSON.parse(localStorage.getItem('offerCountdown') || '{"extensions": 0}');
-         localStorage.setItem('offerCountdown', JSON.stringify({
-           days,
-           hours,
-           minutes,
-           seconds,
-           lastUpdated: new Date().getTime(),
-           extensions: currentState.extensions || 0
-         }));
+        localStorage.setItem('offerCountdown', JSON.stringify({
+          days,
+          hours,
+          minutes,
+          seconds,
+          lastUpdated: new Date().getTime(),
+          extensions: currentState.extensions || 0
+        }));
 
-        document.getElementById('days')!.textContent = days.toString().padStart(2, '0');
-        document.getElementById('hours')!.textContent = hours.toString().padStart(2, '0');
-        document.getElementById('minutes')!.textContent = minutes.toString().padStart(2, '0');
-        document.getElementById('seconds')!.textContent = seconds.toString().padStart(2, '0');
+        const d = document.getElementById('days');
+        const h = document.getElementById('hours');
+        const m = document.getElementById('minutes');
+        const s = document.getElementById('seconds');
+        if (d) d.textContent = days.toString().padStart(2, '0');
+        if (h) h.textContent = hours.toString().padStart(2, '0');
+        if (m) m.textContent = minutes.toString().padStart(2, '0');
+        if (s) s.textContent = seconds.toString().padStart(2, '0');
 
         return { days, hours, minutes, seconds };
       });
@@ -215,7 +281,9 @@ export function CheckoutForm() {
 
       // Send webhook notification for checkout initiation
       await sendWebhookNotification({
+        name: data.name,
         email: data.email,
+        phone: data.phone,
         purchased: false
       });
 
@@ -226,13 +294,7 @@ export function CheckoutForm() {
       // Track checkout initiation with hashed user data and fbp/fbc
       await trackEvent(
         'InitiateCheckout',
-        {
-          value: 1500,
-          currency: 'BDT',
-          content_type: 'course',
-          content_ids: ['N8NCOURSE1'],
-          num_items: 1,
-        },
+        getRegularCheckoutEventData(),
         {
           name: data.name,
           email: data.email,
@@ -251,7 +313,7 @@ export function CheckoutForm() {
         name: data.name,
         email: data.email,
         phone: data.phone,
-        amountOverride: 1500, // Hardcoded for regular checkout to avoid parsing issues
+        amountOverride: COURSE_PRICE.regular,
       });
 
       if (paymentResult.success && paymentResult.payment_url) {
@@ -287,11 +349,42 @@ export function CheckoutForm() {
   const closeExtensionPopup = () => {
     setShowExtensionPopup(false);
   };
+
+  // Function to close the November extension popup
+  const closeNovemberExtensionPopup = () => {
+    setShowNovemberExtensionPopup(false);
+    localStorage.setItem('novemberExtensionPopupSeen', 'true');
+  };
+  
+  // Check if November extension popup should be shown (only when using fixed deadline mode)
+  useEffect(() => {
+    // Only show November extension popup if using fixed November 1st deadline mode
+    if (!USE_FIXED_NOVEMBER_1_DEADLINE) return;
+    
+    const checkNovemberExtension = () => {
+      const now = new Date();
+      const nov1 = new Date(now.getFullYear(), 10, 1); // November 1st of current year
+      
+      // Show popup on or after November 1st
+      if (now >= nov1) {
+        const hasSeenPopup = localStorage.getItem('novemberExtensionPopupSeen');
+        if (!hasSeenPopup) {
+          setShowNovemberExtensionPopup(true);
+          setTimeout(() => {
+            triggerConfetti();
+          }, 500);
+        }
+      }
+    };
+    
+    checkNovemberExtension();
+  }, []);
   
   // For testing purposes - can be removed in production
   useEffect(() => {
     // Uncomment the line below to test the popup and confetti effect
     // setShowExtensionPopup(true);
+    // setShowNovemberExtensionPopup(true);
   }, []);
 
   return (
@@ -368,6 +461,78 @@ export function CheckoutForm() {
           </div>
         </div>
       )}
+
+      {/* November Extension Popup */}
+      {showNovemberExtensionPopup && (
+        <div className="fixed inset-0 flex items-center justify-center z-50">
+          <div className="absolute inset-0 bg-black/50" onClick={closeNovemberExtensionPopup}></div>
+          <div className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 overflow-hidden animate-in fade-in-0 zoom-in-95 duration-300">
+            {/* Popup Header with Gradient */}
+            <div className="bg-gradient-to-r from-[#E9236E] to-[#D41F61] p-4 text-white relative">
+              <button 
+                onClick={closeNovemberExtensionPopup}
+                className="absolute right-4 top-4 text-white hover:text-white/80 transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-white/20 rounded-full">
+                  <Gift className="h-6 w-6" />
+                </div>
+                <h3 className="font-hind-siliguri text-xl font-bold">চাকুরিজীবী ভাইদের জন্য বিশেষ সুবিধা!</h3>
+              </div>
+            </div>
+            
+            {/* Popup Content */}
+            <div className="p-6">
+              <p className="font-hind-siliguri text-lg font-medium text-[#0a2463] mb-4 text-center">
+                অফারটি আরো ১০ দিন চলবে!
+              </p>
+              <p className="font-hind-siliguri text-sm text-slate-600 mb-4">
+                অনেকে আমাদের রিকোয়েস্ট করেছেন সেলারি পেলে কোর্সটা কিনবেন। এ কারণে আমরা চাকুরিজীবী ভাইদের জন্য অফারের মেয়াদ আরো ১০ দিন বাড়ালাম।
+              </p>
+              <p className="font-hind-siliguri text-sm text-[#E9236E] font-medium mb-6 text-center">
+                এই সুযোগটি হাতছাড়া করবেন না!
+              </p>
+              
+              {/* Timer in Popup */}
+              <div className="grid grid-cols-4 gap-2 max-w-sm mx-auto mb-6">
+                <div className="bg-[#E9236E]/10 p-2 rounded-lg border border-[#E9236E]/20">
+                  <div className="font-bold text-xl text-[#E9236E] text-center">
+                    {countdown.days.toString().padStart(2, '0')}
+                  </div>
+                  <div className="font-hind-siliguri text-xs text-gray-600 text-center">দিন</div>
+                </div>
+                <div className="bg-[#E9236E]/10 p-2 rounded-lg border border-[#E9236E]/20">
+                  <div className="font-bold text-xl text-[#E9236E] text-center">
+                    {countdown.hours.toString().padStart(2, '0')}
+                  </div>
+                  <div className="font-hind-siliguri text-xs text-gray-600 text-center">ঘণ্টা</div>
+                </div>
+                <div className="bg-[#E9236E]/10 p-2 rounded-lg border border-[#E9236E]/20">
+                  <div className="font-bold text-xl text-[#E9236E] text-center">
+                    {countdown.minutes.toString().padStart(2, '0')}
+                  </div>
+                  <div className="font-hind-siliguri text-xs text-gray-600 text-center">মিনিট</div>
+                </div>
+                <div className="bg-[#E9236E]/10 p-2 rounded-lg border border-[#E9236E]/20">
+                  <div className="font-bold text-xl text-[#E9236E] text-center">
+                    {countdown.seconds.toString().padStart(2, '0')}
+                  </div>
+                  <div className="font-hind-siliguri text-xs text-gray-600 text-center">সেকেন্ড</div>
+                </div>
+              </div>
+              
+              <Button
+                onClick={closeNovemberExtensionPopup}
+                className="font-hind-siliguri w-full bg-gradient-to-b from-[#E9236E] to-[#D41F61] hover:from-[#D41F61] hover:to-[#E9236E] text-white shadow-lg hover:shadow-xl transition-all duration-200 h-[52px] text-lg rounded-[14px]"
+              >
+                বুঝেছি, অফার গ্রহণ করুন
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
       
       {/* Grid Background */}
       <GridBackground />
@@ -424,7 +589,7 @@ export function CheckoutForm() {
               {/* Warning Banner */}
               <div className="mb-4 -mt-1 bg-red-50 rounded-lg p-2 border-2 border-dashed border-red-200">
                 <p className="font-hind-siliguri text-base text-red-500 text-center font-medium">
-                  অফার শেষ হলে কোর্সের দাম হবে ৪,৫০০ টাকা!
+                নভেম্বর মাসের <span className="font-bold">১০</span> তারিখে অফার শেষ হয়ে যাবে! এর পর থেকে কোর্সের দাম হবে ৪৫০০ টাকা।
                 </p>
               </div>
 
@@ -435,13 +600,13 @@ export function CheckoutForm() {
                   <div className="flex items-center gap-1">
                     <Users className="h-3 w-3 text-green-600" />
                     <p className="font-hind-siliguri text-xs font-medium text-green-600">
-                    1921 Enrolled
+                    2512 Enrolled
                     </p>
                   </div>
                 </div>
                 <div className="flex items-baseline gap-2 mb-2">
-                  <span className="text-2xl font-bold text-[#0a2463]">৳1500</span>
-                  <span className="font-hind-siliguri text-xs text-gray-400 line-through">৳4500</span>
+                  <span className="text-2xl font-bold text-[#0a2463]">{COURSE_PRICE.display.regular}</span>
+                  <span className="font-hind-siliguri text-xs text-gray-400 line-through">{COURSE_PRICE.display.original}</span>
                   <span className="bg-green-500 text-white px-2 py-0.5 rounded text-xs font-medium">Special Offer</span>
                 </div>
                 <p className="font-hind-siliguri text-xs text-slate-600 mb-3">একবার পেমেন্ট, লাইফটাইম অ্যাক্সেস</p>
@@ -504,13 +669,20 @@ export function CheckoutForm() {
 
 
                 <div className="bg-white rounded-md p-3 mb-3 border border-gray-200">
-  <h4 className="font-hind-siliguri text-sm font-semibold text-[#0a2463] mb-1">bKash Payment</h4>
-  <p className="font-hind-siliguri text-[11px] text-gray-700">
-    সিকিউর লেনদেনের জন্য নিচের ‘পেমেন্ট করুন’ বাটনে ক্লিক করুন—bKash পেমেন্ট গেটওয়ে স্বয়ংক্রিয়ভাবে চালু হবে।
-    <br /><br />
-    পেমেন্ট সম্পন্ন হওয়ার সাথে সাথেই আপনি অটোমেটিকভাবে অ্যাক্সেস পেয়ে যাবেন।
-  </p>
-              </div>
+                  <div className="mb-3">
+                    <Image
+                      src="/eps.png"
+                      alt="Payment Methods"
+                      width={500}
+                      height={120}
+                      className="w-full h-auto"
+                      priority={false}
+                    />
+                  </div>
+                  <p className="font-hind-siliguri text-[11px] text-gray-700 text-center">
+                    সিকিউর লেনদেনের জন্য নিচের 'পেমেন্ট করুন' বাটনে ক্লিক করুন
+                  </p>
+                </div>
 
             
                 <Button
@@ -528,7 +700,7 @@ export function CheckoutForm() {
                       <span className="text-sm">প্রক্রিয়াকরণ চলছে...</span>
                     </span>
                   ) : (
-                    <span className="text-xl font-medium">পেমেন্ট করুন ৳ 1500.00</span>
+                    <span className="text-xl font-medium">পেমেন্ট করুন {COURSE_PRICE.display.regularWithDecimals}</span>
                   )}
                 </Button>
               </form>
@@ -537,12 +709,33 @@ export function CheckoutForm() {
               <div className="flex flex-col items-center justify-center mt-4 mb-2">
                 <div className="bg-[#5D28E0]/5 border border-[#5D28E0]/20 rounded-lg px-4 py-2">
                   <p className="font-hind-siliguri text-sm font-medium text-[#0a2463] text-center">
-                    Trusted by 1000+ Students
+                    Trusted by 2000+ Students
                   </p>
                 </div>
               </div>
             </CardContent>
           </Card>
+
+          {/* Support Contact Section */}
+          <div className="mt-6">
+            <div className="border-2 border-dashed border-[#E9236E]/30 rounded-xl p-6 bg-white shadow-sm">
+              <p className="font-hind-siliguri text-base text-[#0a2463] text-center mb-2">
+                কিনতে কোনো সমস্যা হলে বা কিছু জানার প্রয়োজন হলে
+              </p>
+              <h3 className="font-hind-siliguri text-lg font-bold text-[#0a2463] text-center mb-4">
+                কল করুন
+              </h3>
+              <a 
+                href="tel:+8801779749047"
+                className="flex items-center justify-center gap-2 bg-gradient-to-b from-[#E9236E] to-[#D41F61] hover:from-[#D41F61] hover:to-[#E9236E] text-white font-bold py-3 px-6 rounded-lg transition-all duration-200 mx-auto w-fit shadow-lg hover:shadow-xl"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M6.62 10.79a15.053 15.053 0 006.59 6.59l2.2-2.2a1 1 0 011.11-.27 11.36 11.36 0 004.48.9 1 1 0 011 1v3.36a1 1 0 01-1 1A17 17 0 013 4a1 1 0 011-1h3.5a1 1 0 011 1 11.36 11.36 0 00.9 4.48 1 1 0 01-.27 1.11l-2.2 2.2z"/>
+                </svg>
+                <span>+880 1779-749047</span>
+              </a>
+            </div>
+          </div>
         </div>
       </div>
     </section>

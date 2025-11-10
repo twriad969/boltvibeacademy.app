@@ -1,3 +1,5 @@
+import { COURSE_PRICE } from './price';
+
 export const SITE_CONFIG = {
   name: 'n8n AI কোর্স',
   description: 'n8n এআই টুলস ব্যবহার করে আপনার কাজকে অটোমেট করুন',
@@ -85,10 +87,9 @@ export const LESSONS = [
   }
 ];
 
-
 export const PRICING = {
-  originalAmount: '৳4500',
-  amount: '৳1500',
+  originalAmount: COURSE_PRICE.display.original,
+  amount: COURSE_PRICE.display.regular,
   discountBadge: 'Special Offer',
   features: [
   'ফ্রি n8n অ্যাক্সেস (3 Year)',
